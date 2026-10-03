@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+body {
+  background-color: #0F172A;
+  color: #E2E8F0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Leaflet override for dark mode */
+.leaflet-container {
+  background: #0F172A !important;
+}
