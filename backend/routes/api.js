@@ -25,8 +25,21 @@ router.get('/overview', async (req, res, next) => {
     try {
         const { rows } = await db.query('SELECT * FROM vw_wawqi_national_summary LIMIT 1');
         if (rows.length === 0) return res.json(successResponse({}));
-        // Map decimal values to numbers for cleaner JSON
         const data = rows[0];
+        
+        const pRes = await db.query(`
+            SELECT 
+                PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY wqi::double precision) as p75_wqi,
+                PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY wqi::double precision) as p95_wqi,
+                PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY wqi::double precision) as p99_wqi
+            FROM wawqi_results WHERE wqi IS NOT NULL
+        `);
+        if (pRes.rows.length > 0) {
+            data.p75_wqi = pRes.rows[0].p75_wqi;
+            data.p95_wqi = pRes.rows[0].p95_wqi;
+            data.p99_wqi = pRes.rows[0].p99_wqi;
+        }
+
         Object.keys(data).forEach(k => {
             if (typeof data[k] === 'string' && !isNaN(data[k])) data[k] = parseFloat(data[k]);
         });
@@ -202,15 +215,19 @@ router.get('/exceedances', validateState, async (req, res, next) => {
 router.get('/extremes', validateState, async (req, res, next) => {
     try {
         const { page, limit, offset } = getPaginationParams(req);
-        const { state, district, min_wqi } = req.query;
+        const { state, district, category, min_wqi } = req.query;
         
         let where = [];
         let params = [];
         let pidx = 1;
         
-        if (state) { where.push(`state = $${pidx++}`); params.push(state); }
-        if (district) { where.push(`district = $${pidx++}`); params.push(district); }
-        if (min_wqi && !isNaN(min_wqi)) { where.push(`wqi >= $${pidx++}`); params.push(parseFloat(min_wqi)); }
+        if (state) { where.push(`state ILIKE $${pidx++}`); params.push(state); }
+        if (district) { where.push(`district ILIKE $${pidx++}`); params.push(district); }
+        if (category) { where.push(`category ILIKE $${pidx++}`); params.push(category); }
+        if (min_wqi !== undefined && min_wqi !== null && min_wqi !== '' && !isNaN(min_wqi)) { 
+            where.push(`wqi >= $${pidx++}`); 
+            params.push(parseFloat(min_wqi)); 
+        }
         
         let whereClause = where.length > 0 ? 'WHERE ' + where.join(' AND ') : '';
         
@@ -236,9 +253,9 @@ router.get('/gis', validateState, async (req, res, next) => {
         let params = [];
         let pidx = 1;
         
-        if (state) { where.push(`state = $${pidx++}`); params.push(state); }
-        if (district) { where.push(`district = $${pidx++}`); params.push(district); }
-        if (category) { where.push(`latest_category = $${pidx++}`); params.push(category); }
+        if (state) { where.push(`state ILIKE $${pidx++}`); params.push(state); }
+        if (district) { where.push(`district ILIKE $${pidx++}`); params.push(district); }
+        if (category) { where.push(`latest_category ILIKE $${pidx++}`); params.push(category); }
         
         let whereClause = where.length > 0 ? 'WHERE ' + where.join(' AND ') : '';
         
@@ -296,16 +313,16 @@ const handleStationSearch = async (req, res, next) => {
             pidx++;
         }
         if (state) {
-            where.push(`state = $${pidx++}`);
+            where.push(`state ILIKE $${pidx++}`);
             params.push(state);
         }
         if (district) {
-            where.push(`district = $${pidx++}`);
+            where.push(`district ILIKE $${pidx++}`);
             params.push(district);
         }
         if (data_quality) {
             where.push(`data_quality_class = $${pidx++}`);
-            params.push(data_quality.toUpperCase());
+            params.push(data_quality.toUpperCase().replace('_', ' '));
         }
 
         let whereClause = where.length > 0 ? 'WHERE ' + where.join(' AND ') : '';
