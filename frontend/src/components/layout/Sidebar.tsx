@@ -9,7 +9,6 @@ const navItems = [
   { name: 'Parameters', path: '/parameters', icon: TestTube },
   { name: 'Exceedances', path: '/exceedances', icon: Activity },
   { name: 'GIS Map', path: '/map', icon: Map },
-  { name: 'Extreme Values', path: '/extremes', icon: AlertTriangle },
   { name: 'Data Quality', path: '/data-quality', icon: Database },
 ];
 

@@ -40,8 +40,8 @@ export default function Dashboard() {
     category: c.category
   }));
 
-  // Transform state data for Recharts stacked bar chart
-  const topStatesChartData = states.slice(0, 10).map((s: any) => ({
+  // Transform state data for Recharts stacked bar chart (All 30 States/UTs)
+  const allStatesChartData = states.map((s: any) => ({
     state: s.state,
     excellent: parseFloat(s.excellent_count || s.c_exc || '0'),
     good: parseFloat(s.good_count || s.c_good || '0'),
@@ -92,7 +92,6 @@ export default function Dashboard() {
 
         <Card>
           <h3 className="text-lg font-medium text-white mb-6">WQI Statistical Summary</h3>
-          <p className="text-sm text-slate-400 mb-4">Note: The mean WQI is strongly influenced by extreme values in the unsuitably high tail.</p>
           <div className="space-y-4">
             <div className="flex justify-between border-b border-slate-700 pb-2">
               <span className="text-slate-300">Minimum</span>
@@ -103,10 +102,6 @@ export default function Dashboard() {
               <span className="text-white font-medium">{stats?.median_wqi != null ? Number(stats.median_wqi).toFixed(2) : '-'}</span>
             </div>
             <div className="flex justify-between border-b border-slate-700 pb-2">
-              <span className="text-slate-300">Mean</span>
-              <span className="text-white font-medium">{((stats as any)?.avg_wqi ?? stats?.mean_wqi) != null ? Number((stats as any)?.avg_wqi ?? stats?.mean_wqi).toFixed(2) : '-'}</span>
-            </div>
-            <div className="flex justify-between border-b border-slate-700 pb-2">
               <span className="text-slate-300">75th Percentile</span>
               <span className="text-white font-medium">{stats?.p75_wqi != null ? Number(stats.p75_wqi).toFixed(2) : '-'}</span>
             </div>
@@ -114,13 +109,9 @@ export default function Dashboard() {
               <span className="text-slate-300">95th Percentile</span>
               <span className="text-white font-medium">{stats?.p95_wqi != null ? Number(stats.p95_wqi).toFixed(2) : '-'}</span>
             </div>
-            <div className="flex justify-between border-b border-slate-700 pb-2">
+            <div className="flex justify-between pt-2">
               <span className="text-slate-300">99th Percentile</span>
               <span className="text-white font-medium">{stats?.p99_wqi != null ? Number(stats.p99_wqi).toFixed(2) : '-'}</span>
-            </div>
-            <div className="flex justify-between pt-2">
-              <span className="text-slate-300">Maximum</span>
-              <span className="text-white font-medium text-red-400">{stats?.max_wqi != null ? Number(stats.max_wqi).toFixed(2) : '-'}</span>
             </div>
           </div>
         </Card>
@@ -128,10 +119,10 @@ export default function Dashboard() {
 
       <Card>
         <h3 className="text-lg font-medium text-white mb-2">State Category Composition</h3>
-        <p className="text-sm text-slate-400 mb-6">Showing top 10 states by total sample volume.</p>
-        <div className="h-96">
+        <p className="text-sm text-slate-400 mb-6">Showing all 30 States/UTs by WAWQI category breakdown.</p>
+        <div className="h-[800px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={topStatesChartData} layout="vertical" margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
+            <BarChart data={allStatesChartData} layout="vertical" margin={{ top: 5, right: 30, left: 140, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" horizontal={true} vertical={false} />
               <XAxis type="number" stroke="#94A3B8" />
               <YAxis dataKey="state" type="category" stroke="#94A3B8" width={120} tick={{fontSize: 12}} />

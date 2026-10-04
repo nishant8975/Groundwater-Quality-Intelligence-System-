@@ -41,7 +41,7 @@ export default function MapPage() {
   const { data: statesResp } = useStates();
   const statesList = statesResp?.data?.map((s: any) => s.state) || [];
   
-  const { data: resp, isLoading, error } = useGis({ state, district, category, page, limit: 100 });
+  const { data: resp, isLoading, error } = useGis({ state, district, category, page, limit: 500 });
   const points = resp?.data || [];
   const pagination = resp?.pagination;
 
@@ -76,11 +76,16 @@ export default function MapPage() {
     ? `https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png?key=${cartoApiKey}`
     : `https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png`;
 
+  const totalMatchingRecords = pagination?.total ?? 165010;
+  const totalPages = pagination?.totalPages ?? 1;
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white tracking-tight">GIS Intelligence</h1>
-        <p className="mt-1 text-sm text-slate-400">Geospatial analysis of groundwater quality. Data is paginated (100 points/page) to preserve performance.</p>
+        <p className="mt-1 text-sm text-slate-400">
+          Geospatial analysis of groundwater quality across India. Database matching records: <span className="font-semibold text-primary">{totalMatchingRecords.toLocaleString()}</span> (Paginated at 500 points/page for optimal browser performance).
+        </p>
       </div>
 
       <FilterBar config={{ showState: true, showDistrict: true, showCategory: true, statesList }} />
@@ -90,7 +95,7 @@ export default function MapPage() {
           {isLoading && <div className="absolute inset-0 z-10 bg-slate-900/50 flex items-center justify-center"><Skeleton className="h-full w-full" /></div>}
           {error && <div className="absolute inset-0 z-10 bg-slate-900 flex items-center justify-center"><ErrorState message="Failed to load GIS data" /></div>}
           
-          <MapContainer center={[22.0, 79.0]} zoom={5} style={{ height: '100%', width: '100%', zIndex: 1 }}>
+          <MapContainer preferCanvas={true} center={[22.0, 79.0]} zoom={5} style={{ height: '100%', width: '100%', zIndex: 1 }}>
             <TileLayer
               url={tileUrl}
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -124,18 +129,24 @@ export default function MapPage() {
         <div className="space-y-4">
           <Card>
             <h3 className="text-lg font-medium text-white mb-4">Map Controls</h3>
-            <button 
-              onClick={() => setFitTrigger(prev => prev + 1)}
-              disabled={validPoints.length === 0}
-              className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded text-sm disabled:opacity-50"
-            >
-              Fit to Data
-            </button>
+            <div className="space-y-3">
+              <button 
+                onClick={() => setFitTrigger(prev => prev + 1)}
+                disabled={validPoints.length === 0}
+                className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded text-sm disabled:opacity-50"
+              >
+                Fit to Data
+              </button>
+              <div className="text-xs text-slate-400 border-t border-slate-700 pt-3">
+                <div>Page: <span className="text-white font-medium">{page} of {totalPages}</span></div>
+                <div>Showing: <span className="text-white font-medium">{validPoints.length}</span> of <span className="text-white font-medium">{totalMatchingRecords.toLocaleString()}</span> points</div>
+              </div>
+            </div>
           </Card>
           
           <Card>
             <h3 className="text-lg font-medium text-white mb-4">Visible Statistics</h3>
-            <p className="text-xs text-slate-400 mb-4">Based on current API page ({validPoints.length} points)</p>
+            <p className="text-xs text-slate-400 mb-4">Current Page Distribution ({validPoints.length} points)</p>
             <div className="space-y-2 text-sm">
                {['Excellent', 'Good', 'Poor', 'Very Poor', 'Unsuitable', 'UNAVAILABLE'].map(cat => (
                  <div key={cat} className="flex justify-between items-center">
@@ -153,12 +164,15 @@ export default function MapPage() {
 
       <Card>
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-white">GIS List View</h3>
+          <div>
+            <h3 className="text-lg font-medium text-white">GIS List View</h3>
+            <p className="text-xs text-slate-400">Total Filtered Records: {totalMatchingRecords.toLocaleString()}</p>
+          </div>
           {pagination && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
                <button onClick={handlePrevPage} disabled={page <= 1} className="px-3 py-1 bg-slate-800 text-white text-sm rounded disabled:opacity-50">Prev</button>
-               <span className="px-3 py-1 text-slate-400 text-sm">Page {page} of {pagination.totalPages}</span>
-               <button onClick={handleNextPage} disabled={page >= pagination.totalPages} className="px-3 py-1 bg-slate-800 text-white text-sm rounded disabled:opacity-50">Next</button>
+               <span className="px-3 py-1 text-slate-400 text-sm">Page {page} of {totalPages}</span>
+               <button onClick={handleNextPage} disabled={page >= totalPages} className="px-3 py-1 bg-slate-800 text-white text-sm rounded disabled:opacity-50">Next</button>
             </div>
           )}
         </div>

@@ -1,22 +1,37 @@
-import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useExtremes } from '../hooks/useWawqi';
+import { useExtremes, useStates } from '../hooks/useWawqi';
 import { Card } from '../components/ui/Card';
 import { Skeleton, ErrorState, EmptyState } from '../components/ui/States';
 import { CategoryBadge } from '../components/ui/Badge';
+import { FilterBar } from '../components/ui/FilterBar';
 
 export default function Extremes() {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parseInt(searchParams.get('page') || '1', 10);
+  const state = searchParams.get('state') || undefined;
+  const district = searchParams.get('district') || undefined;
+  const category = searchParams.get('category') || undefined;
   const minWqi = searchParams.get('min_wqi') || '100';
 
-  const { data: resp, isLoading, error } = useExtremes({ page, limit: 50, min_wqi: minWqi });
+  const { data: statesResp } = useStates();
+  const statesList = statesResp?.data?.map((s: any) => s.state) || [];
+
+  const { data: resp, isLoading, error } = useExtremes({ page, limit: 50, state, district, category, min_wqi: minWqi });
 
   const handleNextPage = () => {
     setSearchParams(prev => { prev.set('page', (page + 1).toString()); return prev; });
   };
   const handlePrevPage = () => {
     setSearchParams(prev => { prev.set('page', Math.max(1, page - 1).toString()); return prev; });
+  };
+
+  const handleMinWqiChange = (val: string) => {
+    setSearchParams(prev => {
+      if (val) prev.set('min_wqi', val);
+      else prev.delete('min_wqi');
+      prev.set('page', '1');
+      return prev;
+    });
   };
 
   return (
@@ -26,15 +41,17 @@ export default function Extremes() {
         <p className="mt-1 text-sm text-slate-400">Historical records exceeding Unsuitable thresholds. These are not automatically erroneous.</p>
       </div>
 
+      <FilterBar config={{ showState: true, showDistrict: true, showCategory: true, statesList }} />
+
       <Card>
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-400">Minimum WQI Filter:</span>
+            <span className="text-sm font-medium text-slate-300">Minimum WQI Filter:</span>
             <input 
               type="number" 
               value={minWqi} 
-              onChange={(e) => setSearchParams({ min_wqi: e.target.value, page: '1' })}
-              className="bg-slate-900 border border-slate-700 text-white rounded px-2 py-1 text-sm w-24"
+              onChange={(e) => handleMinWqiChange(e.target.value)}
+              className="bg-slate-900 border border-slate-700 text-white rounded px-3 py-1.5 text-sm w-28 focus:outline-none focus:border-primary"
             />
           </div>
           {resp?.pagination && (
